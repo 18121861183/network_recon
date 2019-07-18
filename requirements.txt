@@ -1,0 +1,4 @@
+django
+urllib3
+requests
+mysqlclient
