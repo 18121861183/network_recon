@@ -15,6 +15,8 @@ import ipaddress
 
 import MySQLdb
 
+from recon.views import foreign_protocols, unfinished, port_protocols
+
 config = dict()
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 print(BASE_DIR)
@@ -73,9 +75,6 @@ with open(config.get("scan_file"), "r") as all_ips:
                 count += 1
 
 
-ports = config.get("ports").split(",")
-protocols = config.get("protocols").split(",")
-
 zmap_path = config.get("zmap_result_path")
 if zmap_path.endswith("/") is False:
     zmap_path = zmap_path + "/"
@@ -97,24 +96,78 @@ def ip_number(file):
 
 
 priority = config.get("priority")
-for name in os.listdir(wf):
-    ip_count = ip_number(wf+name)
-    for port, protocol in zip(ports, protocols):
-        file1 = zmap_path+name+".csv"
-        command = ['zmap', '-w', wf+name, '--probe-module=', 'icmp_echoscan', '-r',
-                   config.get("network_send_rate"), '-p', port,
-                   ' | ztee', file1]
-        com_str = " ".join(command)
-        _id = get_sha1(com_str)
-        dt = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        insert = "INSERT INTO recon_scantask VALUES" \
-                 "('{}', '{}', {}, '{}', '{}', {}, 0, '{}', '{}', " \
-                 "NULL, NULL, NULL, 0, 0, 0, -1, {})"\
-            .format(_id, com_str, port, protocol, "*", ip_count, file1, dt, priority)
+if config.get("ports") == "default":
+    # 国内IP扫描常用指令生成
+    for name in os.listdir(wf):
+        ip_count = ip_number(wf + name)
+        for port in port_protocols.keys():
+            for protocol in port_protocols.get(port):
+                if protocol in unfinished:
+                    continue
+                file1 = zmap_path + name + ".csv"
+                command = ['zmap', '-w', wf + name, '--probe-module=', 'icmp_echoscan', '-r',
+                           config.get("network_send_rate"), '-p', port,
+                           ' | ztee', file1]
+                com_str = " ".join(command)
+                _id = get_sha1(com_str)
+                dt = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        print(insert)
+                insert = "INSERT INTO recon_scantask VALUES" \
+                         "('{}', '{}', {}, '{}', '{}', {}, 0, '{}', '{}', " \
+                         "NULL, NULL, NULL, 0, 0, 0, -1, {})" \
+                    .format(_id, com_str, port, protocol, "*", ip_count, file1, dt, priority)
 
-        client.execute(insert)
-        db.commit()
+                print(insert)
+
+                client.execute(insert)
+                db.commit()
+elif config.get("ports") == "foreign":
+    # 国外IP常用选项
+    for name in os.listdir(wf):
+        ip_count = ip_number(wf + name)
+        for port in foreign_protocols.keys():
+            for protocol in foreign_protocols.get(port):
+                if protocol in unfinished:
+                    continue
+                file1 = zmap_path + name + ".csv"
+                command = ['zmap', '-w', wf + name, '--probe-module=', 'icmp_echoscan', '-r',
+                           config.get("network_send_rate"), '-p', port,
+                           ' | ztee', file1]
+                com_str = " ".join(command)
+                _id = get_sha1(com_str)
+                dt = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+                insert = "INSERT INTO recon_scantask VALUES" \
+                         "('{}', '{}', {}, '{}', '{}', {}, 0, '{}', '{}', " \
+                         "NULL, NULL, NULL, 0, 0, 0, -1, {})" \
+                    .format(_id, com_str, port, protocol, "*", ip_count, file1, dt, priority)
+
+                print(insert)
+
+                client.execute(insert)
+                db.commit()
+else:
+    ports = config.get("ports").split(",")
+    protocols = config.get("protocols").split(",")
+    for name in os.listdir(wf):
+        ip_count = ip_number(wf+name)
+        for port, protocol in zip(ports, protocols):
+            file1 = zmap_path+name+".csv"
+            command = ['zmap', '-w', wf+name, '--probe-module=', 'icmp_echoscan', '-r',
+                       config.get("network_send_rate"), '-p', port,
+                       ' | ztee', file1]
+            com_str = " ".join(command)
+            _id = get_sha1(com_str)
+            dt = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+            insert = "INSERT INTO recon_scantask VALUES" \
+                     "('{}', '{}', {}, '{}', '{}', {}, 0, '{}', '{}', " \
+                     "NULL, NULL, NULL, 0, 0, 0, -1, {})"\
+                .format(_id, com_str, port, protocol, "*", ip_count, file1, dt, priority)
+
+            print(insert)
+
+            client.execute(insert)
+            db.commit()
 

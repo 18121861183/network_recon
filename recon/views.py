@@ -44,10 +44,34 @@ normal_ports = [13, 21, 22, 23, 25, 26, 53, 69, 80, 81, 88, 110, 111, 123, 135, 
 # zookeeper未实现, iscsi未实现, gearman未实现, mdns未实现, elastic未实现
 # teamviewer未实现, x11未实现, irc未实现, dahua-dvr未实现, upnp未实现
 # db2未实现, stomp, rifa-dvr, vmware_authentication_daemon
-unfinished = ["netbios", "netbios-ssn", "bgp", "firewall-1",
-              "lpd", "rip", "vmware_authentication_daemon", "l2tv", "upnp", "zookeeper",
+unfinished = ["bgp", "lpd", "rip", "vmware_authentication_daemon", "l2tv", "upnp", "zookeeper",
               "iscsi", "gearman", "mdns", "teamviewer", "x11", "irc", "elastic", "db2",
               "dahua-dvr", "rifa-dvr", "stomp"]
+
+foreign_protocols = {
+    21: ["ftp", "http", "ssh"],
+    22: ["ssh", "http", "ftp"],
+    23: ["telnet", "http", "ssh"],
+    25: ["smtp", "http", "ftp"],
+    80: ["http", "ssh", "ftp"],
+    137: ["nbns", "http", "ssh"],
+    139: ["nbss", "http", "ssh"],
+    161: ["snmp", "http", "ssh"],
+    443: ["http", "ssh"],
+    445: ["smb", "http"],
+    515: ["lpd", "http", "ssh"],
+    1433: ["mssql", "http", "ssh"],
+    1900: ["http", "upnp", "ssh"],
+    3306: ["mysql", "http", "ssh"],
+    3389: ["rdp", "http", "ssh"],
+    6379: ["redis", "http", "ssh"],
+    7547: ["http", "ssh", "ftp"],
+    8080: ["http", "ssh", "ftp"],
+    9200: ["http", "ssh", "elastic"],
+    22105: ["http", "ssh"],
+    37777: ["http", "ssh", "dahua-dvr"],
+}
+
 port_protocols = {
     13: ["daytime", "ssh", "http"],
     21: ["ftp", "http", "ssh"],
@@ -64,11 +88,11 @@ port_protocols = {
     111: ["portmap", "ssh", "http"],
     123: ["ntp", "http", "ssh"],
     135: ["dcerpc", "http", "ssh"],
-    137: ["netbios", "http", "ssh"],
-    139: ["netbios-ssn", "http", "ssh"],
+    137: ["nbns", "http", "ssh"],
+    139: ["nbss", "http", "ssh"],
     161: ["snmp", "http", "ssh"],
     179: ["bgp", "http", "ssh"],
-    264: ["firewall-1", "http", "ssh"],
+    264: ["cpfw", "http", "ssh"],
     389: ["ldap", "http", "ssh"],
     443: ["http", "ssh"],
     445: ["smb", "http"],
