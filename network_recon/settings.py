@@ -77,9 +77,9 @@ WSGI_APPLICATION = 'network_recon.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'recon_new',
+        'NAME': 'recon',
         'USER': 'root',         # 数据库用户名
-        'PASSWORD': '123456',     # 密码
+        'PASSWORD': 'tipDB@123',     # 密码
         'HOST': '127.0.0.1',    # 主机
         'PORT': '3306',
     }
@@ -123,9 +123,9 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-banner_save_path = '/opt/zgrab/'
+banner_save_path = '/opt/recon/zgrab/'
 
-ztag_save_path = '/opt/ztag/'
+ztag_save_path = '/opt/recon/ztag/'
 
-report_save_path = '/opt/report/'
+report_save_path = '/opt/recon/report/'
 

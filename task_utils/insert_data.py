@@ -15,7 +15,7 @@ import ipaddress
 
 import MySQLdb
 
-from recon.views import foreign_protocols, unfinished, port_protocols
+from recon.common import port_protocols, unfinished, foreign_protocols
 
 config = dict()
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -40,39 +40,39 @@ if wf.endswith("/") is False:
 
 model = config.get("file_model")
 
-with open(config.get("scan_file"), "r") as all_ips:
-    count = 1
-    file_number = 1
-    file_name = datetime.datetime.now().strftime("%Y%m%d%H%M%S_")
-    _outfile = open(wf+file_name+str(file_number), 'w')
-    max_number = int(config.get("record_max_ips"))
-    print("开始分解要扫描的IP列表...")
-    if model == 'single':
-        for line in all_ips.readlines():
-            if count != 0 and count > max_number:
-                _outfile.close()
-                file_number += 1
-                count = 0
-                _outfile = open(wf+file_name+str(file_number), 'w')
-            line = line.strip()
-            _outfile.write(line+"\n")
-            number = ipaddress.ip_network(line, False).num_addresses
-            count += number
-    elif model == 'double':
-        for line in all_ips.readlines():
-            line = line.strip()
-            array = line.split(",")
-            if len(array) != 2:
-                continue
-            for ip_num in range(int(ipaddress.IPv4Address(array[0])), int(ipaddress.IPv4Address(array[1]))+1):
-                if count != 0 and count >= max_number:
-                    _outfile.close()
-                    file_number += 1
-                    count = 0
-                    _outfile = open(wf + file_name + str(file_number), 'w')
-                    print("生成指令文件：", file_name, file_number)
-                _outfile.write(str(ipaddress.ip_address(int(ip_num)))+"\n")
-                count += 1
+# with open(config.get("scan_file"), "r") as all_ips:
+#     count = 1
+#     file_number = 1
+#     file_name = datetime.datetime.now().strftime("%Y%m%d%H%M%S_")
+#     _outfile = open(wf+file_name+str(file_number), 'w')
+#     max_number = int(config.get("record_max_ips"))
+#     print("开始分解要扫描的IP列表...")
+#     if model == 'single':
+#         for line in all_ips.readlines():
+#             if count != 0 and count > max_number:
+#                 _outfile.close()
+#                 file_number += 1
+#                 count = 0
+#                 _outfile = open(wf+file_name+str(file_number), 'w')
+#             line = line.strip()
+#             _outfile.write(line+"\n")
+#             number = ipaddress.ip_network(line, False).num_addresses
+#             count += number
+#     elif model == 'double':
+#         for line in all_ips.readlines():
+#             line = line.strip()
+#             array = line.split(",")
+#             if len(array) != 2:
+#                 continue
+#             for ip_num in range(int(ipaddress.IPv4Address(array[0])), int(ipaddress.IPv4Address(array[1]))+1):
+#                 if count != 0 and count >= max_number:
+#                     _outfile.close()
+#                     file_number += 1
+#                     count = 0
+#                     _outfile = open(wf + file_name + str(file_number), 'w')
+#                     print("生成指令文件：", file_name, file_number)
+#                 _outfile.write(str(ipaddress.ip_address(int(ip_num)))+"\n")
+#                 count += 1
 
 
 zmap_path = config.get("zmap_result_path")
@@ -102,26 +102,30 @@ if config.get("ports") == "default":
     for name in os.listdir(wf):
         ip_count = ip_number(wf + name)
         for port in port_protocols.keys():
+            protocol_str = ""
             for protocol in port_protocols.get(port):
                 if protocol in unfinished:
                     continue
-                file1 = zmap_path + name + ".csv"
-                command = ['zmap', '-w', wf + name, '--probe-module=', 'icmp_echoscan', '-r',
-                           config.get("network_send_rate"), '-p', port,
-                           ' | ztee', file1]
-                com_str = " ".join(command)
-                _id = get_sha1(com_str)
-                dt = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                if protocol_str != "":
+                    protocol_str += ","
+                protocol_str += protocol
+            file1 = zmap_path + name + ".csv"
+            command = ['zmap', '-w', wf+name, '--probe-module=icmp_echoscan', '-r',
+                       config.get("network_send_rate"), '-p', str(port),
+                       ' | ztee', file1]
+            com_str = " ".join(command)
+            _id = get_sha1(com_str)
+            dt = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-                insert = "INSERT INTO recon_scantask VALUES" \
-                         "('{}', '{}', {}, '{}', '{}', {}, 0, '{}', '{}', " \
-                         "NULL, NULL, NULL, 0, 0, 0, -1, {})" \
-                    .format(_id, com_str, port, protocol, "*", ip_count, file1, dt, priority)
+            insert = "INSERT INTO recon_scantask VALUES" \
+                     "('{}', '{}', {}, '{}', '{}', {}, 0, '{}', '{}', " \
+                     "NULL, NULL, NULL, 0, 0, 0, -1, {})" \
+                .format(_id, com_str, port, protocol_str, "*", ip_count, file1, dt, priority)
 
-                print(insert)
+            print(insert)
 
-                client.execute(insert)
-                db.commit()
+            client.execute(insert)
+            db.commit()
 elif config.get("ports") == "foreign":
     # 国外IP常用选项
     for name in os.listdir(wf):
@@ -131,10 +135,10 @@ elif config.get("ports") == "foreign":
                 if protocol in unfinished:
                     continue
                 file1 = zmap_path + name + ".csv"
-                command = ['zmap', '-w', wf + name, '--probe-module=', 'icmp_echoscan', '-r',
-                           config.get("network_send_rate"), '-p', port,
+                command = ['zmap', '-w', wf + name, '--probe-module=icmp_echoscan', '-r',
+                           config.get("network_send_rate"), '-p', str(port),
                            ' | ztee', file1]
-                com_str = " ".join(command)
+                com_str = " ".join(command) + protocol
                 _id = get_sha1(com_str)
                 dt = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -154,10 +158,10 @@ else:
         ip_count = ip_number(wf+name)
         for port, protocol in zip(ports, protocols):
             file1 = zmap_path+name+".csv"
-            command = ['zmap', '-w', wf+name, '--probe-module=', 'icmp_echoscan', '-r',
-                       config.get("network_send_rate"), '-p', port,
+            command = ['zmap', '-w', wf+name, '--probe-module=icmp_echoscan', '-r',
+                       config.get("network_send_rate"), '-p', str(port),
                        ' | ztee', file1]
-            com_str = " ".join(command)
+            com_str = " ".join(command) + protocol
             _id = get_sha1(com_str)
             dt = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -171,3 +175,4 @@ else:
             client.execute(insert)
             db.commit()
 
+db.close()
