@@ -22,7 +22,7 @@ normal_ports = [13, 21, 22, 23, 25, 26, 53, 69, 80, 81, 88, 110, 111, 123, 135, 
 # zookeeper未实现, iscsi未实现, gearman未实现, mdns未实现, elastic未实现
 # teamviewer未实现, x11未实现, irc未实现, dahua-dvr未实现, upnp未实现
 # db2未实现, stomp, rifa-dvr, vmware_authentication_daemon
-unfinished = ["bgp", "lpd", "rip", "vmware_authentication_daemon", "l2tv", "upnp", "zookeeper",
+unfinished = ["bgp", "lpd", "rip", "vmware_authentication_daemon", "l2tv", "zookeeper",
               "iscsi", "gearman", "mdns", "teamviewer", "x11", "irc", "elastic", "db2",
               "dahua-dvr", "rifa-dvr", "stomp"]
 
