@@ -195,14 +195,14 @@ def exec_finish_job(delay):
                     banner_list = models.BannerTask.objects.filter(scan_task_id=task.id, execute_status=2).all()
                     for info in banner_list:
                         if info.banner_result_path is not None:
-                            banner_path[info.banner_result_path] = "banner_"+info.protocol+".json"
+                            banner_path[info.banner_result_path] = "banner_"+info.protocol+"_"+str(info.port)+".json"
                         if info.ztag_result_path is not None:
-                            ztag_path[info.ztag_result_path] = "ztag_"+info.protocol+".json"
+                            ztag_path[info.ztag_result_path] = "ztag_"+info.protocol+"_"+str(info.port)+".json"
 
                     filename = str(task.id) + '_' + str(task.port) + '.tar.gz'
                     file_path = report_path + filename
                     with tarfile.open(file_path, 'w:gz') as tar:
-                        tar.add(task.port_result_path, arcname='zmap.csv')
+                        tar.add(task.port_result_path, arcname='zmap'+"_"+str(task.port)+'.csv')
                         for msg in banner_path.keys():
                             tar.add(msg, arcname=banner_path.get(msg))
                         for msg in ztag_path.keys():
