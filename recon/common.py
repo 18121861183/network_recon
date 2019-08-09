@@ -22,9 +22,7 @@ normal_ports = [13, 21, 22, 23, 25, 26, 53, 69, 80, 81, 88, 110, 111, 123, 135, 
 # zookeeper未实现, iscsi未实现, gearman未实现, mdns未实现, elastic未实现
 # teamviewer未实现, x11未实现, irc未实现, dahua-dvr未实现, upnp未实现
 # db2未实现, stomp, rifa-dvr, vmware_authentication_daemon
-unfinished = ["bgp", "lpd", "rip", "vmware_authentication_daemon", "l2tv", "zookeeper",
-              "iscsi", "gearman", "mdns", "teamviewer", "x11", "irc", "elastic", "db2",
-              "dahua-dvr", "rifa-dvr", "stomp"]
+unfinished = ["bgp", "lpd", "rip", "l2tv", "iscsi", "db2", "stomp"]
 
 foreign_protocols = {
     21: ["ftp", "http", "ssh"],
@@ -47,7 +45,7 @@ foreign_protocols = {
     8080: ["http", "ssh", "ftp"],
     9200: ["http", "ssh", "elastic"],
     22105: ["http", "ssh"],
-    37777: ["http", "ssh", "dahua-dvr"],
+    37777: ["http", "ssh", "dahua_dvr"],
 }
 
 port_protocols = {
@@ -80,7 +78,7 @@ port_protocols = {
     623: ["ipmi", "http", "ssh", "ftp"],
     636: ["ldap", "http", "ssh"],
     873: ["rsync", "http", "ssh"],
-    902: ["vmware_authentication_daemon", "http", "ftp"],
+    902: ["vmware", "http", "ftp"],
     992: ["http", "telnet", "ssh", "ftp"],
     993: ["imap", "http", "ssh", "ftp"],
     995: ["pop3", "http", "ssh"],
@@ -136,9 +134,9 @@ port_protocols = {
     14000: ["http", "ssh", "ftp"],
     22105: ["http", "ssh"],
     27017: ["http", "ssh", "mongodb"],
-    37777: ["http", "ssh", "dahua-dvr"],
+    37777: ["http", "ssh", "dahua_dvr"],
     50000: ["http", "ssh", "db2"],
-    50100: ["http", "rifa-dvr", "ftp"],
+    50100: ["http", "rifatron", "ftp"],
     61613: ["http", "ssh", "stomp"]
 }
 
