@@ -109,7 +109,7 @@ if config.get("ports") == "default":
                 if protocol_str != "":
                     protocol_str += ","
                 protocol_str += protocol
-            file1 = zmap_path + name + ".csv"
+            file1 = zmap_path + name + "_" + str(port) + ".csv"
             command = ['zmap', '-w', wf+name, '--probe-module=icmp_echoscan', '-r',
                        config.get("network_send_rate"), '-p', str(port),
                        ' | ztee', file1]
@@ -134,7 +134,7 @@ elif config.get("ports") == "foreign":
             for protocol in foreign_protocols.get(port):
                 if protocol in unfinished:
                     continue
-                file1 = zmap_path + name + ".csv"
+                file1 = zmap_path + name + "_" + str(port) + ".csv"
                 command = ['zmap', '-w', wf + name, '--probe-module=icmp_echoscan', '-r',
                            config.get("network_send_rate"), '-p', str(port),
                            ' | ztee', file1]
