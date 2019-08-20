@@ -37,6 +37,10 @@ def index(request):
 
 def zmap_start(delay):
     while True:
+        number = models.BannerTask.objects.filter(execute_status__lt=2).count()
+        if number > 0:
+            time.sleep(delay)
+            continue
         task = models.ScanTask.objects.filter(execute_status=0).order_by('priority').order_by('issue_time').first()
         if task is not None:
             logging.info("check out task for waiting " + task.__str__())
