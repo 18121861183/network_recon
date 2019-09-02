@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'recon.apps.ReconConfig',
+    'django_crontab'
 ]
 
 MIDDLEWARE = [
@@ -79,7 +80,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'recon',
         'USER': 'root',         # 数据库用户名
-        'PASSWORD': 'tipDB@123',     # 密码
+        'PASSWORD': '123456',     # 密码
         'HOST': '127.0.0.1',    # 主机
         'PORT': '3306',
     }
@@ -123,9 +124,36 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
+# 定时任务配置, 每日批量探测开始时间点, 日志存储位置
+# python3 manage.py crontab add      添加crontab任务
+# python3 manage.py crontab show     显示当前定时任务
+# python3 manage.py crontab remove   移除定时任务
+CRONJOBS = [
+    ('45 10 * * *', 'recon.views.batch_scan', '>> /tmp/xxxxxxx.log')
+]
+
+# 扫描相关配置
+zmap_result_path = '/opt/recon/zmap/'
 banner_save_path = '/opt/recon/zgrab/'
-
 ztag_save_path = '/opt/recon/ztag/'
-
 report_save_path = '/opt/recon/report/'
 
+temp_file_path = '/opt/recon/temp/'
+scan_file_path = '/opt/recon/fasts/'
+
+# 即时扫描的发包速度(速度越快准确率越低)
+fast_scan_rate = '1000'
+# 正常接收扫描的发包速度(考虑扫描效率和预留出上传结果的带宽后尽量设置最大)
+normal_scan_rate = '10000'
+
+# sftp相关配置
+sftp_host = '192.168.0.1'
+sftp_port = 22333
+sftp_username = 'root'
+sftp_password = '12!QAZ2wsx'
+sftp_remote = '/data/scan_receive/d1/'
+
+# kafka相关配置
+# kafka_host = '192.168.5.169:9092,192.168.5.169:9093'
+# kafka_topics_prior = 'TOPSIGHT-AUTO-SCAN-PRIOR'
+# kafka_topics_normal = 'TOPSIGHT-AUTO-SCAN'

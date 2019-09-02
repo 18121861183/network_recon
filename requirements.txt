@@ -1,4 +1,7 @@
+pykafka
 django
 urllib3
 requests
 mysqlclient
+django_crontab
+gssapi

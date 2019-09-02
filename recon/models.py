@@ -71,3 +71,16 @@ class ReconRecordLog(models.Model):
         verbose_name = "任务执行情况"
         verbose_name_plural = verbose_name
 
+
+class ReceiveScans(models.Model):
+    ip = models.CharField(max_length=40, verbose_name="ip地址", primary_key=True)
+    status = models.IntegerField(verbose_name="探测状态(0:待扫描,1:已经提取到扫描任务队列,2:待删除)", default=0)
+    flag = models.IntegerField(verbose_name="0:代表批次探测,1:及时探测", default=0)
+
+    def __str__(self):
+        return self.ip
+
+    class Meta:
+        verbose_name = "探测队列"
+        verbose_name_plural = verbose_name
+

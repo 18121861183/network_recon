@@ -5,19 +5,22 @@ import json
 import os
 import subprocess
 import tarfile
+import threading
 import time
 import uuid
 import logging
-import requests
+
+import paramiko as paramiko
 import urllib3
 
 from django.shortcuts import render
 
 # Create your views here.
 from django.utils import timezone
+from pykafka import KafkaClient
 
 from network_recon import settings
-from recon import models, date_util, hash_util
+from recon import models, date_util, hash_util, generation_task
 from recon.common import port_protocols, unfinished, ztag_command
 
 urllib3.disable_warnings()
@@ -37,7 +40,7 @@ def index(request):
 
 def zmap_start(delay):
     while True:
-        number = models.BannerTask.objects.filter(execute_status__lt=2).count()
+        number = models.BannerTask.objects.filter(execute_status=0).count()
         if number > 0:
             time.sleep(delay)
             continue
@@ -205,8 +208,21 @@ def exec_finish_job(delay):
 
                     filename = str(task.id) + '_' + str(task.port) + '.tar.gz'
                     file_path = report_path + filename
+                    params = {
+                        'port': task.port,
+                        'count': task.ip_count,
+                        'ip_range': task.ip_range,
+                        'client_ip': get_mac(),
+                        'protocols': task.protocol,
+                        'time': task.finish_time.time()
+                    }
+                    # 添加探测参数文件到压缩包
+                    _file = open(settings.temp_file_path+"/param.json", "w")
+                    _file.write(json.dumps(params))
+                    _file.close()
                     with tarfile.open(file_path, 'w:gz') as tar:
                         tar.add(task.port_result_path, arcname='zmap'+"_"+str(task.port)+'.csv')
+                        tar.add(settings.temp_file_path+"/param.json", arcname='param.json')
                         for msg in banner_path.keys():
                             tar.add(msg, arcname=banner_path.get(msg))
                         for msg in ztag_path.keys():
@@ -231,6 +247,18 @@ def get_mac():
     return '-'.join(address[i:i + 2] for i in range(0, len(address), 2))
 
 
+def sftp_upload(local):
+    sf = paramiko.Transport((settings.sftp_host, settings.sftp_port))
+    sf.connect(username=settings.sftp_username, password=settings.sftp_password)
+    sftp = paramiko.SFTPClient.from_transport(sf)
+    try:
+        filename = str(local).rsplit("/", 1)[1]
+        sftp.put(local, settings.sftp_remote+filename)
+    except BaseException as e1:
+        logging.error("sftp upload center error: "+str(e1))
+    sf.close()
+
+
 def upload_center(delay):
     while True:
         logging.info("now running upload center...")
@@ -238,35 +266,115 @@ def upload_center(delay):
         if len(scan_finish_list) > 0:
             for up in scan_finish_list:
                 try:
-                    data = {
-                        'port': up.port,
-                        'count': up.ip_count,
-                        'ip_range': up.ip_range,
-                        'client_ip': get_mac(),
-                        'time': up.finish_time.time()
-                    }
-
-                    report_file = open(up.report_result_path, "rb")
-
-                    files = {
-                        'file': report_file
-                    }
-
-                    response = requests.post('https://182.148.53.139:18081/dataExchange/upload4scan', data=data, files=files, verify=False)
-                    logging.warning("upload center result: "+response.text)
-                    if response.json()['msg'] == 'success':
-                        models.ScanTask.objects.filter(id=up.id).update(upload_status=1)
-                        # os.remove(up.report_result_path)
+                    sftp_upload(up.report_result_path)
                 except BaseException as e2:
                     logging.error("upload center error", up, e2)
 
         time.sleep(delay)
 
 
-_thread.start_new_thread(upload_center, (2,))
-
-_thread.start_new_thread(zmap_start, (2,))
-_thread.start_new_thread(exec_banner_job, (2,))
-_thread.start_new_thread(exec_finish_job, (2,))
+# _thread.start_new_thread(upload_center, (2,))
+#
+# _thread.start_new_thread(zmap_start, (2,))
+# _thread.start_new_thread(exec_banner_job, (2,))
+# _thread.start_new_thread(exec_finish_job, (2,))
 
 # print(timezone.now())
+
+
+"""
+kafka接收要探测的数据
+接收数据并入数据库
+"""
+
+
+# kafka连接获取数据
+# def start_fast_recon():
+#     client = KafkaClient(hosts=settings.kafka_host)
+#     topic = client.topics[settings.kafka_topics_prior]
+#     consumer = topic.get_simple_consumer(consumer_group=b'first', auto_commit_enable=True, auto_commit_interval_ms=1, consumer_id=b'prior')
+#     for message in consumer:
+#         logging.info("receive fast recon ips: " + str(message.value))
+#         if len(message.value) > 2:
+#             ip_addr = json.loads(message.value).get("ip", "")
+#             if ip_addr != "" and models.ReceiveScans.objects.filter(ip=ip_addr).count() == 0:
+#                 models.ReceiveScans.objects.create(ip=ip_addr, status=0, flag=1).save()
+#
+#
+# def start_normal_rec():
+#     client = KafkaClient(hosts=settings.kafka_host)
+#     topic = client.topics[settings.kafka_topics_normal]
+#     consumer = topic.get_simple_consumer(consumer_group=b'latter', auto_commit_enable=True, auto_commit_interval_ms=1, consumer_id=b'normal')
+#     for message in consumer:
+#         logging.info("receive normal recon ips: " + str(message.value))
+#         if len(message.value) > 2:
+#             ip_addr = json.loads(message.value).get("ip", "")
+#             if ip_addr != "" and models.ReceiveScans.objects.filter(ip=ip_addr).count() == 0:
+#                 models.ReceiveScans.objects.create(ip=ip_addr).save()
+
+
+# _thread.start_new_thread(start_fast_recon, ())
+# _thread.start_new_thread(start_normal_rec, ())
+# t1 = threading.Thread(target=start_fast_recon, name='worker1')  # 线程对象.
+# t1.start()
+# t2 = threading.Thread(target=start_normal_rec, name='worker2')  # 线程对象.
+# t2.start()
+
+
+"""
+定时生产执行任务:
+    即时探测任务生成
+    批量探测任务生成
+"""
+
+
+# 快速扫描任务生成
+def check_scan_ips(delay):
+    while True:
+        logging.debug("running generation task...")
+        try:
+            number = models.ReceiveScans.objects.filter(flag=1, status=0).count()
+            if number > 0:
+                models.ReceiveScans.objects.filter(flag=1, status=0).update(status=1)
+                deal = models.ReceiveScans.objects.filter(flag=1, status=1).all()
+                filename = str(date_util.get_now_timestamp())+".txt"
+                file_path = settings.scan_file_path+filename
+                _file = open(file_path, "w")
+                for line in deal:
+                    print(line.ip)
+                    _file.write(line.ip+"\n")
+                _file.close()
+                # 生成任务指令
+                generation_task.generation(file_path)
+                models.ReceiveScans.objects.filter(flag=1, status=1).update(status=2)
+        except BaseException as be:
+            logging.error("gen task error: "+str(be))
+        time.sleep(delay)
+
+
+# 每日一次批量探测
+def batch_scan():
+    logging.info("timer start result....")
+    try:
+        number = models.ReceiveScans.objects.filter(flag=0, status=0).count()
+        if number > 0:
+            models.ReceiveScans.objects.filter(flag=0, status=0).update(status=1)
+            deal = models.ReceiveScans.objects.filter(flag=0, status=1).all()
+            filename = str(date_util.get_now_timestamp()) + ".txt"
+            file_path = settings.scan_file_path + filename
+            _file = open(file_path, "w")
+            for line in deal:
+                print(line.ip)
+                _file.write(line.ip + "\n")
+            _file.close()
+            # 生成任务指令
+            generation_task.generation_normal(file_path)
+            models.ReceiveScans.objects.filter(flag=0, status=1).update(status=2)
+    except BaseException as be:
+        logging.error("gen task error: " + str(be))
+
+
+_thread.start_new_thread(check_scan_ips, (1,))
+
+
+
