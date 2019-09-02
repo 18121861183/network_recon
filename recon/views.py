@@ -44,7 +44,7 @@ def zmap_start(delay):
         if number > 0:
             time.sleep(delay)
             continue
-        task = models.ScanTask.objects.filter(execute_status=0).order_by('priority').order_by('issue_time').first()
+        task = models.ScanTask.objects.filter(execute_status=0, priority__gt=1).order_by('priority').order_by('issue_time').first()
         if task is not None:
             logging.info("check out task for waiting " + task.__str__())
             models.ScanTask.objects.filter(id=task.id).update(execute_status=1)
@@ -190,7 +190,7 @@ def exec_finish_job(delay):
     while True:
         logging.info("check finish task...")
         all_list = models.ScanTask.objects.filter(execute_status=2).filter(banner_task_count=0)\
-                                          .filter(upload_status=-1).all()
+                                          .filter(upload_status=-1).order_by('priority').order_by('issue_time').all()
         if len(all_list) > 0:
             report_path = settings.report_save_path + date_util.get_now_day_str() + '/'
             if os.path.exists(report_path) is False:
@@ -273,11 +273,23 @@ def upload_center(delay):
         time.sleep(delay)
 
 
+def real_time_scan():
+    while True:
+        task = models.ScanTask.objects.filter(execute_status=0, priority=1).order_by('issue_time').first()
+        if task is not None:
+            logging.info("check out task for waiting " + task.__str__())
+            models.ScanTask.objects.filter(id=task.id).update(execute_status=1)
+            scan_start(task)
+        time.sleep(1)
+
+
 # _thread.start_new_thread(upload_center, (2,))
 #
 # _thread.start_new_thread(zmap_start, (2,))
 # _thread.start_new_thread(exec_banner_job, (2,))
 # _thread.start_new_thread(exec_finish_job, (2,))
+# 实时探测任务
+# _thread.start_new_thread(real_time_scan, (2,))
 
 # print(timezone.now())
 
