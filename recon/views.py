@@ -22,6 +22,7 @@ from pykafka import KafkaClient
 from network_recon import settings
 from recon import models, date_util, hash_util, generation_task
 from recon.common import port_protocols, unfinished, ztag_command
+from util import split_tar_report
 
 urllib3.disable_warnings()
 logging.basicConfig(level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S',
@@ -146,8 +147,10 @@ def banner_start(task_info):
                 if line.find('"error":"') == -1:
                     count += 1
 
+        banner_size = os.path.getsize(task_info.banner_result_path)
         records_handled = 0
         ztag_status = -1
+        ztag_size = 0
         if task_info.ztag_status == 0:
             ztag_status = 0
             shell_command = 'cat ' + task_info.banner_result_path + ' | ztag -p ' + str(task_info.port) + ' ' \
@@ -164,9 +167,10 @@ def banner_start(task_info):
                 ztag_status = 1
             except BaseException as e3:
                 print(e3, "error ZTag info", shell_command)
+            ztag_size = os.path.getsize(task_info.banner_result_path)
 
-        models.BannerTask.objects.filter(id=task_info.id).update(execute_status=2, banner_success_count=count,
-                                                                 ztag_handle_count=records_handled,
+        models.BannerTask.objects.filter(id=task_info.id).update(execute_status=2, banner_success_count=count, banner_size=banner_size,
+                                                                 ztag_handle_count=records_handled, ztag_size=ztag_size,
                                                                  ztag_status=ztag_status, finish_time=timezone.now())
         scantask = models.ScanTask.objects.filter(id=task_info.scan_task_id).first()
         if scantask is not None:
@@ -228,7 +232,9 @@ def exec_finish_job(delay):
                         for msg in ztag_path.keys():
                             tar.add(msg, arcname=ztag_path.get(msg))
                     file_md5 = file_hash(file_path)
-                    models.ScanTask.objects.filter(id=task.id).update(report_result_path=file_path, report_file_md5=file_md5, upload_status=0)
+                    report_size = os.path.getsize(file_path)
+                    models.ScanTask.objects.filter(id=task.id).update(report_result_path=file_path, report_file_md5=file_md5,
+                                                                      report_size=report_size, upload_status=0)
                     if len(banner_path.keys()) > 0:
                         logging.info("delete report sub child files, all in report... path in:"+report_path)
                         os.remove(task.port_result_path)
@@ -251,11 +257,13 @@ def sftp_upload(local):
     sf = paramiko.Transport((settings.sftp_host, settings.sftp_port))
     sf.connect(username=settings.sftp_username, password=settings.sftp_password)
     sftp = paramiko.SFTPClient.from_transport(sf)
-    try:
-        filename = str(local).rsplit("/", 1)[1]
-        sftp.put(local, settings.sftp_remote+filename)
-    except BaseException as e1:
-        logging.error("sftp upload center error: "+str(e1))
+    reports = split_tar_report.split_file(path=local)
+    for send in reports:
+        filename = str(send).rsplit("/", 1)[1]
+        try:
+            sftp.put(send, settings.sftp_remote+filename)
+        except:
+            sftp.put(send, settings.sftp_remote + filename)
     sf.close()
 
 
@@ -267,6 +275,7 @@ def upload_center(delay):
             for up in scan_finish_list:
                 try:
                     sftp_upload(up.report_result_path)
+                    models.ScanTask.objects.filter(id=up.id).update(upload_status=1)
                 except BaseException as e2:
                     logging.error("upload center error", up, e2)
 

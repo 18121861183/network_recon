@@ -20,3 +20,13 @@ def get_now_day_str():
     return get_date_format_day(get_now_timestamp())
 
 
+def get_now_date():
+    """
+    yyyy-mm-dd hh:mm:ss
+    :return:
+    """
+    return get_date_format(get_now_timestamp())
+
+
+def get_format_date(style):
+    return time.strftime(style, time.localtime(get_now_timestamp()))
