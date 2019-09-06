@@ -151,7 +151,7 @@ def banner_start(task_info):
         records_handled = 0
         ztag_status = -1
         ztag_size = 0
-        if task_info.ztag_status == 5:
+        if task_info.ztag_status == 0:
             ztag_status = 0
             shell_command = 'cat ' + task_info.banner_result_path + ' | ztag -p ' + str(task_info.port) + ' ' \
                             + ztag_command.get(task_info.protocol) + ' > ' + task_info.ztag_result_path
