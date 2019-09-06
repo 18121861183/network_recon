@@ -151,7 +151,7 @@ def banner_start(task_info):
         records_handled = 0
         ztag_status = -1
         ztag_size = 0
-        if task_info.ztag_status == 0:
+        if task_info.ztag_status == 5:
             ztag_status = 0
             shell_command = 'cat ' + task_info.banner_result_path + ' | ztag -p ' + str(task_info.port) + ' ' \
                             + ztag_command.get(task_info.protocol) + ' > ' + task_info.ztag_result_path
@@ -292,13 +292,13 @@ def real_time_scan():
         time.sleep(1)
 
 
-# _thread.start_new_thread(upload_center, (2,))
-#
-# _thread.start_new_thread(zmap_start, (2,))
-# _thread.start_new_thread(exec_banner_job, (2,))
-# _thread.start_new_thread(exec_finish_job, (2,))
+_thread.start_new_thread(upload_center, (2,))
+
+_thread.start_new_thread(zmap_start, (2,))
+_thread.start_new_thread(exec_banner_job, (2,))
+_thread.start_new_thread(exec_finish_job, (2,))
 # 实时探测任务
-# _thread.start_new_thread(real_time_scan, (2,))
+# _thread.start_new_thread(real_time_scan, ())
 
 # print(timezone.now())
 

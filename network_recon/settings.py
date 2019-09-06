@@ -80,7 +80,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'recon',
         'USER': 'root',         # 数据库用户名
-        'PASSWORD': '123456',     # 密码
+        'PASSWORD': 'tipDB@123',     # 密码
         'HOST': '127.0.0.1',    # 主机
         'PORT': '3306',
     }
@@ -129,7 +129,7 @@ STATIC_URL = '/static/'
 # python3 manage.py crontab show     显示当前定时任务
 # python3 manage.py crontab remove   移除定时任务
 CRONJOBS = [
-    ('45 10 * * *', 'recon.views.batch_scan', '>> /tmp/xxxxxxx.log')
+    ('1 0 * * *', 'recon.views.batch_scan', '>> /tmp/receive_scan.log')
 ]
 
 # 扫描相关配置
