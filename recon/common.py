@@ -105,7 +105,7 @@ port_protocols = {
     5555: ["http", "ssh"],
     5672: ["amqp", "http", "ssh"],
     5900: ["vnc", "http", "ssh"],
-    5938: ["http", "teamviewer", "ssh"],
+    5938: ["http", "teamview", "ssh"],
     5984: ["http", "ssh", "ftp"],
     6000: ["http", "ssh", "x11"],
     6379: ["redis", "http", "ssh"],
