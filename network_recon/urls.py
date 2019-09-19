@@ -20,5 +20,6 @@ from recon import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.index)
+    path('', views.index),
+    path('scan_task_init/', views.init)
 ]

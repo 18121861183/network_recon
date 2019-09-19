@@ -23,6 +23,7 @@ class ScanTask(models.Model):
     banner_task_count = models.IntegerField(verbose_name="尚未完成的banner获取任务数量，数量为0即可回传结果到中心", default=-1)
     upload_status = models.IntegerField(verbose_name="上报中心状态(0-未上报,1-已上报,-1-不可上报状态)", default=-1)
     priority = models.IntegerField(verbose_name="扫描优先级", default=5)
+    circulate_number = models.IntegerField(verbose_name="循环执行次数", default=0)
 
     def __str__(self):
         return self.command

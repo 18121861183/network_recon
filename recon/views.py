@@ -5,7 +5,6 @@ import json
 import os
 import subprocess
 import tarfile
-import threading
 import time
 import uuid
 import logging
@@ -13,12 +12,12 @@ import logging
 import paramiko as paramiko
 import requests
 import urllib3
+from django.http import HttpResponse
 
 from django.shortcuts import render
 
 # Create your views here.
 from django.utils import timezone
-from pykafka import KafkaClient
 
 from network_recon import settings
 from recon import models, date_util, hash_util, generation_task
@@ -38,6 +37,35 @@ except BaseException as e:
 
 def index(request):
     return render(request, "index.html")
+
+
+def init(request):
+    flag = request.GET.get("check", "")
+    if flag == "" or flag != "circulate_init":
+        return HttpResponse(json.dumps({"msg": "无效请求!请确认URL是否正确!"}))
+    circulate_number = models.ScanTask.objects.first().circulate_number + 1
+    models.ScanTask.objects.update(open_port_count=0, port_result_path=None, finish_time=None, report_result_path=None,
+                                   report_file_md5=None, report_size=0, execute_status=0, send_banner_task=0,
+                                   banner_task_count=-1, upload_status=-1, circulate_number=circulate_number)
+    models.BannerTask.objects.all().delete()
+    models.ReceiveScans.objects.all().delete()
+    run_list = ["rm -f "+settings.zmap_result_path+"*", "rm -f "+settings.banner_save_path+"*", "rm -f "+settings.ztag_save_path+"*",
+                "rm -f "+settings.scan_file_path+"*", "rm -rf "+settings.report_save_path + "*"]
+    for command in run_list:
+        subprocess.run(command, shell=True)
+    return HttpResponse(json.dumps({"msg": "初始化完成!"}))
+
+
+def init_china(request):
+    pass
+
+
+def init_us(request):
+    pass
+
+
+def init_other(request):
+    pass
 
 
 def zmap_start(delay):
