@@ -44,7 +44,7 @@ def init(request):
     if flag == "" or flag != "circulate_init":
         return HttpResponse(json.dumps({"msg": "无效请求!请确认URL是否正确!"}))
     circulate_number = models.ScanTask.objects.first().circulate_number + 1
-    models.ScanTask.objects.update(open_port_count=0, port_result_path=None, finish_time=None, report_result_path=None,
+    models.ScanTask.objects.update(open_port_count=0, finish_time=None, report_result_path=None,
                                    report_file_md5=None, report_size=0, execute_status=0, send_banner_task=0,
                                    banner_task_count=-1, upload_status=-1, circulate_number=circulate_number)
     models.BannerTask.objects.all().delete()
