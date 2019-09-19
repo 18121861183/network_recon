@@ -55,6 +55,18 @@ def init(request):
     return HttpResponse(json.dumps({"msg": "初始化完成!"}))
 
 
+def init_china(request):
+    pass
+
+
+def init_us(request):
+    pass
+
+
+def init_other(request):
+    pass
+
+
 def zmap_start(delay):
     while True:
         number = models.BannerTask.objects.filter(execute_status=0).count()
