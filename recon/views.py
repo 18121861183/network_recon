@@ -10,6 +10,7 @@ import uuid
 import logging
 
 import paramiko as paramiko
+import requests
 import urllib3
 from django.http import HttpResponse
 
@@ -43,7 +44,7 @@ def init(request):
     if flag == "" or flag != "circulate_init":
         return HttpResponse(json.dumps({"msg": "无效请求!请确认URL是否正确!"}))
     circulate_number = models.ScanTask.objects.first().circulate_number + 1
-    models.ScanTask.objects.update(open_port_count=0, port_result_path=None, finish_time=None, report_result_path=None,
+    models.ScanTask.objects.update(open_port_count=0, finish_time=None, report_result_path=None,
                                    report_file_md5=None, report_size=0, execute_status=0, send_banner_task=0,
                                    banner_task_count=-1, upload_status=-1, circulate_number=circulate_number)
     models.BannerTask.objects.all().delete()
@@ -246,7 +247,7 @@ def exec_finish_job(delay):
                         'ip_range': task.ip_range,
                         'client_ip': get_mac(),
                         'protocols': task.protocol,
-                        'time': task.finish_time.time()
+                        'time': str(task.finish_time.timestamp())
                     }
                     # 添加探测参数文件到压缩包
                     _file = open(settings.temp_file_path+"/param.json", "w")
@@ -302,8 +303,28 @@ def upload_center(delay):
         if len(scan_finish_list) > 0:
             for up in scan_finish_list:
                 try:
-                    sftp_upload(up.report_result_path)
-                    models.ScanTask.objects.filter(id=up.id).update(upload_status=1)
+                    # sftp_upload(up.report_result_path)
+                    # models.ScanTask.objects.filter(id=up.id).update(upload_status=1)
+                    data = {
+                        'port': up.port,
+                        'count': up.ip_count,
+                        'ip_range': up.ip_range,
+                        'client_ip': get_mac(),
+                        'time': up.finish_time.time()
+                    }
+
+                    report_file = open(up.report_result_path, "rb")
+
+                    files = {
+                        'file': report_file
+                    }
+
+                    response = requests.post('https://182.148.53.139:18081/dataExchange/upload4scan', data=data,
+                                             files=files, verify=False)
+                    logging.warning("upload center result: " + response.text)
+                    if response.json()['msg'] == 'success':
+                        models.ScanTask.objects.filter(id=up.id).update(upload_status=1)
+                        # os.remove(up.report_result_path)
                 except BaseException as e2:
                     logging.error("upload center error", up, e2)
 
