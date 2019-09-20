@@ -17,10 +17,10 @@
 #                 8089, 8834, 9200, 9999, 10000, 12345, 14000, 22105, 27017, 37777, 50000, 50100, 61613]
 
 
-unfinished = ["tacacsplus", "identd", "isakmp", "serialNumbered", "realport", "javaRmi", "citrixApps",
+unfinished = ["isakmp", "serialNumbered", "javaRmi", "citrixApps",
               "smi", "munin", "appleAirportAdmin", "androidDebugBridge", "broadcastPcAnywhere", "weblogic",
               "spark", "ajp", "yahooSmartTv", "winbox", "bitcoin", "ethereumrpc", "gangliaXMLGridMonitor",
-              "dvrVideo", "litecoin", "git", "ubiquitiDiscover", "automatedTankGauge", "activemq",
+              "dvrVideo", "litecoin", "git", "ubiquitiDiscover", "automatedTankGauge",
               "idevice", "mumble"]
 
 foreign_protocols = {
