@@ -20,7 +20,7 @@
 unfinished = ["tacacsplus", "identd", "isakmp", "serialNumbered", "realport", "javaRmi", "citrixApps",
               "smi", "munin", "appleAirportAdmin", "androidDebugBridge", "broadcastPcAnywhere", "weblogic",
               "spark", "ajp", "yahooSmartTv", "winbox", "bitcoin", "ethereumrpc", "gangliaXMLGridMonitor",
-              "dvrVideo", "litecoin", "git", "ndmp", "ubiquitiDiscover", "automatedTankGauge", "activemq",
+              "dvrVideo", "litecoin", "git", "ubiquitiDiscover", "automatedTankGauge", "activemq",
               "idevice", "mumble"]
 
 foreign_protocols = {
