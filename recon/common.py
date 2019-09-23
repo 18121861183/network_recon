@@ -19,8 +19,8 @@
 
 unfinished = ["isakmp", "serialNumbered", "javaRmi", "citrixApps",
               "smi", "munin", "appleAirportAdmin", "androidDebugBridge", "broadcastPcAnywhere", "weblogic",
-              "spark", "ajp", "yahooSmartTv", "winbox", "bitcoin", "ethereumrpc", "gangliaXMLGridMonitor",
-              "dvrVideo", "litecoin", "git", "ubiquitiDiscover", "automatedTankGauge",
+              "spark", "ajp", "yahooSmartTv", "bitcoin", "ethereumrpc", "gangliaXMLGridMonitor",
+              "dvrVideo", "litecoin", "ubiquitiDiscover", "automatedTankGauge",
               "idevice", "mumble"]
 
 foreign_protocols = {
