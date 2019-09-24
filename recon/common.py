@@ -19,7 +19,7 @@
 
 unfinished = ["serialNumbered", "javaRmi", "citrixApps",
               "smi", "munin", "appleAirportAdmin", "androidDebugBridge", "broadcastPcAnywhere", "weblogic",
-              "spark", "ajp", "yahooSmartTv", "bitcoin", "ethereumrpc", "gangliaXMLGridMonitor",
+              "spark", "yahooSmartTv", "bitcoin", "ethereumrpc", "gangliaXMLGridMonitor",
               "dvrVideo", "litecoin", "ubiquitiDiscover", "automatedTankGauge", "idevice"]
 
 foreign_protocols = {
