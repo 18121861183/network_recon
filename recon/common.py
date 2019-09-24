@@ -17,11 +17,10 @@
 #                 8089, 8834, 9200, 9999, 10000, 12345, 14000, 22105, 27017, 37777, 50000, 50100, 61613]
 
 
-unfinished = ["isakmp", "serialNumbered", "javaRmi", "citrixApps",
+unfinished = ["serialNumbered", "javaRmi", "citrixApps",
               "smi", "munin", "appleAirportAdmin", "androidDebugBridge", "broadcastPcAnywhere", "weblogic",
               "spark", "ajp", "yahooSmartTv", "bitcoin", "ethereumrpc", "gangliaXMLGridMonitor",
-              "dvrVideo", "litecoin", "ubiquitiDiscover", "automatedTankGauge",
-              "idevice"]
+              "dvrVideo", "litecoin", "ubiquitiDiscover", "automatedTankGauge", "idevice"]
 
 foreign_protocols = {
     21: ["ftp", "http", "ssh"],
