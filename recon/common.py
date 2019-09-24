@@ -21,7 +21,7 @@ unfinished = ["isakmp", "serialNumbered", "javaRmi", "citrixApps",
               "smi", "munin", "appleAirportAdmin", "androidDebugBridge", "broadcastPcAnywhere", "weblogic",
               "spark", "ajp", "yahooSmartTv", "bitcoin", "ethereumrpc", "gangliaXMLGridMonitor",
               "dvrVideo", "litecoin", "ubiquitiDiscover", "automatedTankGauge",
-              "idevice", "mumble"]
+              "idevice"]
 
 foreign_protocols = {
     21: ["ftp", "http", "ssh"],
