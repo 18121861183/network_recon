@@ -20,7 +20,7 @@
 unfinished = ["serialNumbered", "javaRmi", "citrixApps",
               "smi", "munin", "appleAirportAdmin", "androidDebugBridge", "broadcastPcAnywhere", "weblogic",
               "spark", "yahooSmartTv", "bitcoin", "ethereumrpc", "gangliaXMLGridMonitor",
-              "dvrVideo", "automatedTankGauge", "idevice"]
+              "dvrVideo", "idevice"]
 
 foreign_protocols = {
     21: ["ftp", "http", "ssh"],
@@ -285,7 +285,7 @@ port_protocols = {
     9981: ["http", "ssh", "ftp"],
     9999: ["javaRmi", "http", "ssh"],
     10000: ["ndmp", "http", "ssh"],
-    10001: ["atg", "ubiquitiDiscover", "automatedTankGauge", "http"],
+    10001: ["atg", "ubiquitiDiscover", "http"],
     10243: ["http", "ssh", "ftp"],
     10333: ["http", "ssh", "ftp"],
     11001: ["fix", "http", "ssh", "ftp"],
