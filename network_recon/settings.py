@@ -45,7 +45,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    # 'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -80,7 +80,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'recon',
         'USER': 'root',         # 数据库用户名
-        'PASSWORD': 'tipDB@123',     # 密码
+        'PASSWORD': '123456',     # 密码
         'HOST': '127.0.0.1',    # 主机
         'PORT': '3306',
     }
@@ -138,8 +138,11 @@ banner_save_path = '/opt/recon/zgrab/'
 ztag_save_path = '/opt/recon/ztag/'
 report_save_path = '/opt/recon/report/'
 
+zmap_white_path = '/opt/recon/scan/'
 temp_file_path = '/opt/recon/temp/'
 scan_file_path = '/opt/recon/fasts/'
+# 单个任务最大IP数量
+record_max_ips = 10000
 
 # 即时扫描的发包速度(速度越快准确率越低)
 fast_scan_rate = '1000'

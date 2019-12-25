@@ -16,10 +16,17 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
-from recon import views
+from recon import views, task_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.index),
-    path('scan_task_init/', views.init)
+    path('scan_task_init/', views.init),
+
+    # task
+    path('protocols_info/', task_views.get_protocols),
+    path('insert_task/', task_views.generate_task),
+    path('query_task/', task_views.scan_task_query),
+    path('task_detail/', task_views.task_detail),
+    path('task_operation/', task_views.task_operation),
 ]

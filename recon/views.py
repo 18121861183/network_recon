@@ -9,7 +9,7 @@ import time
 import uuid
 import logging
 
-import paramiko as paramiko
+# import paramiko as paramiko
 import requests
 import urllib3
 from django.http import HttpResponse
@@ -56,25 +56,13 @@ def init(request):
     return HttpResponse(json.dumps({"msg": "初始化完成!"}))
 
 
-def init_china(request):
-    pass
-
-
-def init_us(request):
-    pass
-
-
-def init_other(request):
-    pass
-
-
 def zmap_start(delay):
     while True:
         number = models.BannerTask.objects.filter(execute_status=0).count()
         if number > 0:
             time.sleep(delay)
             continue
-        task = models.ScanTask.objects.filter(execute_status=0, priority__gt=1).order_by('priority').order_by('issue_time').first()
+        task = models.ScanTask.objects.filter(execute_status=0, priority__gt=0).order_by('priority', "issue_time").first()
         if task is not None:
             logging.info("check out task for waiting " + task.__str__())
             models.ScanTask.objects.filter(id=task.id).update(execute_status=1)
@@ -110,32 +98,34 @@ def scan_start(task_info):
             for _ in file.readlines():
                 count += 1
 
-        port = task_info.port
+        pt = task_info.port
+        ports = str(pt).split(",")
         protocol_str = task_info.protocol
         if len(protocol_str) > 0:
             protocols = protocol_str.split(",")
         else:
-            protocols = port_protocols.get(port)
+            protocols = []
         task_number = 0
         logging.info("start generator banner task: " + str(task_info.id))
-        for protocol in protocols:
-            if protocol in unfinished:
-                continue
-            banner_command = ["zgrab2", "-f", task_info.port_result_path, protocol, "-p", str(port), "-t 5s"]
-            _id = hash_util.get_md5(" ".join(banner_command))
-            zgrab_result_path = settings.banner_save_path + protocol + "_" + str(port) + "_" + _id + ".json"
-            ztag_result_path = None
-            ztag_status = -1
-            if protocol in ztag_command.keys():
-                ztag_result_path = settings.ztag_save_path + protocol + "_" + str(port) + "_" + _id + ".json"
-                ztag_status = 0
-            banner_command.append('--output-file='+zgrab_result_path)
-            models.BannerTask.objects.create(id=_id, command=" ".join(banner_command), port=port, protocol=protocol,
-                                             ip_count=count, scan_task_id=task_info.id,
-                                             banner_result_path=zgrab_result_path,
-                                             ztag_result_path=ztag_result_path, ztag_status=ztag_status,
-                                             priority=task_info.priority, create_time=timezone.now())
-            task_number += 1
+        for port in ports:
+            for protocol in protocols:
+                if protocol in unfinished:
+                    continue
+                banner_command = ["zgrab2", "-f", task_info.port_result_path, protocol, "-p", str(port), "-t 5s"]
+                _id = hash_util.get_md5(" ".join(banner_command))
+                zgrab_result_path = settings.banner_save_path + protocol + "_" + str(port) + "_" + _id + ".json"
+                ztag_result_path = None
+                ztag_status = -1
+                if protocol in ztag_command.keys():
+                    ztag_result_path = settings.ztag_save_path + protocol + "_" + str(port) + "_" + _id + ".json"
+                    ztag_status = 0
+                banner_command.append('--output-file='+zgrab_result_path)
+                models.BannerTask.objects.create(id=_id, command=" ".join(banner_command), port=port, protocol=protocol,
+                                                 ip_count=count, scan_task_id=task_info.id,
+                                                 banner_result_path=zgrab_result_path,
+                                                 ztag_result_path=ztag_result_path, ztag_status=ztag_status,
+                                                 priority=task_info.priority, create_time=timezone.now())
+                task_number += 1
 
         logging.info("generator banner task numbers: "+str(task_number))
 
@@ -206,7 +196,7 @@ def banner_start(task_info):
             logging.info("start deal scan task numbers:"+str(scantask.banner_task_count))
             number = scantask.banner_task_count - 1
             if number == 0:
-                models.ScanTask.objects.filter(id=task_info.scan_task_id).update(banner_task_count=number, finish_time=timezone.now())
+                models.ScanTask.objects.filter(id=task_info.scan_task_id).update(banner_task_count=number, finish_time=timezone.now(), task_flag=1)
             else:
                 models.ScanTask.objects.filter(id=task_info.scan_task_id).update(banner_task_count=number)
             models.ReconRecordLog.objects.create(id=uuid.uuid1(), ip_count=task_info.ip_count,
@@ -282,18 +272,18 @@ def get_mac():
     return '-'.join(address[i:i + 2] for i in range(0, len(address), 2))
 
 
-def sftp_upload(local):
-    sf = paramiko.Transport((settings.sftp_host, settings.sftp_port))
-    sf.connect(username=settings.sftp_username, password=settings.sftp_password)
-    sftp = paramiko.SFTPClient.from_transport(sf)
-    reports = split_tar_report.split_file(path=local)
-    for send in reports:
-        filename = str(send).rsplit("/", 1)[1]
-        try:
-            sftp.put(send, settings.sftp_remote+filename)
-        except:
-            sftp.put(send, settings.sftp_remote + filename)
-    sf.close()
+# def sftp_upload(local):
+#     sf = paramiko.Transport((settings.sftp_host, settings.sftp_port))
+#     sf.connect(username=settings.sftp_username, password=settings.sftp_password)
+#     sftp = paramiko.SFTPClient.from_transport(sf)
+#     reports = split_tar_report.split_file(path=local)
+#     for send in reports:
+#         filename = str(send).rsplit("/", 1)[1]
+#         try:
+#             sftp.put(send, settings.sftp_remote+filename)
+#         except:
+#             sftp.put(send, settings.sftp_remote + filename)
+#     sf.close()
 
 
 def upload_center(delay):
@@ -319,7 +309,7 @@ def upload_center(delay):
                         'file': report_file
                     }
 
-                    response = requests.post('https://182.148.53.139:18081/dataExchange/upload4scan', data=data,
+                    response = requests.post('http://192.168.0.184:8083/mdp/upload4scan', data=data,
                                              files=files, verify=False)
                     logging.warning("upload center result: " + response.text)
                     if response.json()['msg'] == 'success':
@@ -341,54 +331,17 @@ def real_time_scan():
         time.sleep(1)
 
 
-_thread.start_new_thread(upload_center, (2,))
+# _thread.start_new_thread(upload_center, (2,))
+#
+# _thread.start_new_thread(zmap_start, (2,))
+# _thread.start_new_thread(exec_banner_job, (2,))
+# _thread.start_new_thread(exec_finish_job, (2,))
 
-_thread.start_new_thread(zmap_start, (2,))
-_thread.start_new_thread(exec_banner_job, (2,))
-_thread.start_new_thread(exec_finish_job, (2,))
+
 # 实时探测任务
 # _thread.start_new_thread(real_time_scan, ())
 
 # print(timezone.now())
-
-
-"""
-kafka接收要探测的数据
-接收数据并入数据库
-"""
-
-
-# kafka连接获取数据
-# def start_fast_recon():
-#     client = KafkaClient(hosts=settings.kafka_host)
-#     topic = client.topics[settings.kafka_topics_prior]
-#     consumer = topic.get_simple_consumer(consumer_group=b'first', auto_commit_enable=True, auto_commit_interval_ms=1, consumer_id=b'prior')
-#     for message in consumer:
-#         logging.info("receive fast recon ips: " + str(message.value))
-#         if len(message.value) > 2:
-#             ip_addr = json.loads(message.value).get("ip", "")
-#             if ip_addr != "" and models.ReceiveScans.objects.filter(ip=ip_addr).count() == 0:
-#                 models.ReceiveScans.objects.create(ip=ip_addr, status=0, flag=1).save()
-#
-#
-# def start_normal_rec():
-#     client = KafkaClient(hosts=settings.kafka_host)
-#     topic = client.topics[settings.kafka_topics_normal]
-#     consumer = topic.get_simple_consumer(consumer_group=b'latter', auto_commit_enable=True, auto_commit_interval_ms=1, consumer_id=b'normal')
-#     for message in consumer:
-#         logging.info("receive normal recon ips: " + str(message.value))
-#         if len(message.value) > 2:
-#             ip_addr = json.loads(message.value).get("ip", "")
-#             if ip_addr != "" and models.ReceiveScans.objects.filter(ip=ip_addr).count() == 0:
-#                 models.ReceiveScans.objects.create(ip=ip_addr).save()
-
-
-# _thread.start_new_thread(start_fast_recon, ())
-# _thread.start_new_thread(start_normal_rec, ())
-# t1 = threading.Thread(target=start_fast_recon, name='worker1')  # 线程对象.
-# t1.start()
-# t2 = threading.Thread(target=start_normal_rec, name='worker2')  # 线程对象.
-# t2.start()
 
 
 """
