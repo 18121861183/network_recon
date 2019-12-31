@@ -13,8 +13,11 @@ from django.test import TestCase
 # address = address.upper()
 # result = '-'.join(address[i:i+2] for i in range(0, len(address), 2))
 #
-# print(result)
+# for ip in list(ipaddress.ip_network("192.168.0.0/24", False).hosts()):
+#     print(str(ip))
 
-result = ipaddress.ip_address('3221225985')
-print(str(result))
-
+path = '/opt/recon/scan/20191225174347_1'
+print(str(path).find("/"))
+if path is not None and str(path).find("/") > -1:
+    array = path.split("/")
+    print(array[len(array)-1])

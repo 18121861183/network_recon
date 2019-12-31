@@ -325,25 +325,25 @@ port_protocols = {
 }
 
 
-ztag_command = {
-    'ftp': '-P ftp -S banner',
-    'ssh': '-P ssh -S v2',
-    'telnet': '-P telnet -S banner',
-    'smtp': '-P smtp -S starttls',
-    'http': '-P http -S get',
-    'pop3': '-P pop3 -S starttls',
-    'smb': '-P smb -S banner',
-    'imap': '-P imap -S starttls',
-    'modbus': '-P modbus -S device_id',
-    'mssql': '-P mssql -S banner',
-    'oracle': '-P oracle -S banner',
-    'fox': '-P fox -S device_id',
-    'mysql': '-P mysql -S banner',
-    'postgres': '-P postgres -S banner',
-    'mongodb': '-P mongodb -S banner',
-    'bacnet': '-P bacnet -S device_id',
-    'dnp3': '-P dnp3 -S status',
-}
+# ztag_command = {
+#     'ftp': '-P ftp -S banner',
+#     'ssh': '-P ssh -S v2',
+#     'telnet': '-P telnet -S banner',
+#     'smtp': '-P smtp -S starttls',
+#     'http': '-P http -S get',
+#     'pop3': '-P pop3 -S starttls',
+#     'smb': '-P smb -S banner',
+#     'imap': '-P imap -S starttls',
+#     'modbus': '-P modbus -S device_id',
+#     'mssql': '-P mssql -S banner',
+#     'oracle': '-P oracle -S banner',
+#     'fox': '-P fox -S device_id',
+#     'mysql': '-P mysql -S banner',
+#     'postgres': '-P postgres -S banner',
+#     'mongodb': '-P mongodb -S banner',
+#     'bacnet': '-P bacnet -S device_id',
+#     'dnp3': '-P dnp3 -S status',
+# }
 
 
 protocol_ports = {

@@ -1,4 +1,3 @@
-pykafka
 django
 urllib3
 requests

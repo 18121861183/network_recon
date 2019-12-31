@@ -21,8 +21,8 @@ from django.utils import timezone
 
 from network_recon import settings
 from recon import models, date_util, hash_util, generation_task
-from recon.common import port_protocols, unfinished, ztag_command
-from util import split_tar_report
+from recon.common import unfinished
+# from util import split_tar_report
 
 urllib3.disable_warnings()
 logging.basicConfig(level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S',
@@ -33,6 +33,38 @@ try:
     models.BannerTask.objects.filter(execute_status=1).update(execute_status=0)
 except BaseException as e:
     print(e)
+
+
+'''
+zmap_result_path = '/opt/recon/zmap/'
+banner_save_path = '/opt/recon/zgrab/'
+report_save_path = '/opt/recon/report/'
+zmap_white_path = '/opt/recon/scan/'
+temp_file_path = '/opt/recon/temp/'
+scan_file_path = '/opt/recon/fasts/'
+'''
+if os.path.exists(settings.zmap_result_path) is False:
+    os.makedirs(settings.zmap_result_path)
+
+
+if os.path.exists(settings.banner_save_path) is False:
+    os.makedirs(settings.banner_save_path)
+
+
+if os.path.exists(settings.report_save_path) is False:
+    os.makedirs(settings.report_save_path)
+
+
+if os.path.exists(settings.zmap_white_path) is False:
+    os.makedirs(settings.zmap_white_path)
+
+
+if os.path.exists(settings.temp_file_path) is False:
+    os.makedirs(settings.temp_file_path)
+
+
+if os.path.exists(settings.scan_file_path) is False:
+    os.makedirs(settings.scan_file_path)
 
 
 def index(request):
@@ -49,7 +81,7 @@ def init(request):
                                    banner_task_count=-1, upload_status=-1, circulate_number=circulate_number)
     models.BannerTask.objects.all().delete()
     models.ReceiveScans.objects.all().delete()
-    run_list = ["rm -f "+settings.zmap_result_path+"*", "rm -f "+settings.banner_save_path+"*", "rm -f "+settings.ztag_save_path+"*",
+    run_list = ["rm -f "+settings.zmap_result_path+"*", "rm -f "+settings.banner_save_path+"*",
                 "rm -f "+settings.scan_file_path+"*", "rm -rf "+settings.report_save_path + "*"]
     for command in run_list:
         subprocess.run(command, shell=True)
@@ -114,16 +146,10 @@ def scan_start(task_info):
                 banner_command = ["zgrab2", "-f", task_info.port_result_path, protocol, "-p", str(port), "-t 5s"]
                 _id = hash_util.get_md5(" ".join(banner_command))
                 zgrab_result_path = settings.banner_save_path + protocol + "_" + str(port) + "_" + _id + ".json"
-                ztag_result_path = None
-                ztag_status = -1
-                if protocol in ztag_command.keys():
-                    ztag_result_path = settings.ztag_save_path + protocol + "_" + str(port) + "_" + _id + ".json"
-                    ztag_status = 0
                 banner_command.append('--output-file='+zgrab_result_path)
                 models.BannerTask.objects.create(id=_id, command=" ".join(banner_command), port=port, protocol=protocol,
                                                  ip_count=count, scan_task_id=task_info.id,
                                                  banner_result_path=zgrab_result_path,
-                                                 ztag_result_path=ztag_result_path, ztag_status=ztag_status,
                                                  priority=task_info.priority, create_time=timezone.now())
                 task_number += 1
 
@@ -131,7 +157,10 @@ def scan_start(task_info):
 
         models.ScanTask.objects.filter(id=task_info.id).update(execute_status=2, open_port_count=count,
                                                                banner_task_count=task_number)
-
+        # 更新完成任务数量
+        parent = models.GeneralScanTask.objects.filter(id=task_info.parent_id).first()
+        finish_count = parent.finished_sub_task_count + 1
+        models.GeneralScanTask.objects.filter(id=task_info.parent_id).update(finished_sub_task_count=finish_count)
         logging.info("record running task log: " + str(count))
         models.ReconRecordLog.objects.create(id=uuid.uuid1(), ip_count=task_info.ip_count,
                                              command=command, success_count=count,
@@ -167,41 +196,27 @@ def banner_start(task_info):
                     count += 1
 
         banner_size = os.path.getsize(task_info.banner_result_path)
-        records_handled = 0
-        ztag_status = -1
-        ztag_size = 0
-        if task_info.ztag_status == 0:
-            ztag_status = 0
-            shell_command = 'cat ' + task_info.banner_result_path + ' | ztag -p ' + str(task_info.port) + ' ' \
-                            + ztag_command.get(task_info.protocol) + ' > ' + task_info.ztag_result_path
-            output = subprocess.getoutput(shell_command)
-            print("ztag result", output)
-            try:
-                result = output.split("\n")
-                if len(result) > 0:
-                    _info = result[len(result)-1]
-                    rh = json.loads(_info).get('records_handled')
-                    if rh is not None:
-                        records_handled = int(rh)
-                ztag_status = 1
-            except BaseException as e3:
-                print(e3, "error ZTag info", shell_command)
-            ztag_size = os.path.getsize(task_info.banner_result_path)
 
-        models.BannerTask.objects.filter(id=task_info.id).update(execute_status=2, banner_success_count=count, banner_size=banner_size,
-                                                                 ztag_handle_count=records_handled, ztag_size=ztag_size,
-                                                                 ztag_status=ztag_status, finish_time=timezone.now())
+        models.BannerTask.objects.filter(id=task_info.id).update(execute_status=2, banner_success_count=count,
+                                                                 banner_size=banner_size, finish_time=timezone.now())
         scantask = models.ScanTask.objects.filter(id=task_info.scan_task_id).first()
         if scantask is not None:
             logging.info("start deal scan task numbers:"+str(scantask.banner_task_count))
             number = scantask.banner_task_count - 1
             if number == 0:
-                models.ScanTask.objects.filter(id=task_info.scan_task_id).update(banner_task_count=number, finish_time=timezone.now(), task_flag=1)
+                models.ScanTask.objects.filter(id=task_info.scan_task_id).update(banner_task_count=number, finish_time=timezone.now())
             else:
                 models.ScanTask.objects.filter(id=task_info.scan_task_id).update(banner_task_count=number)
             models.ReconRecordLog.objects.create(id=uuid.uuid1(), ip_count=task_info.ip_count,
                                                  command=command, success_count=count,
                                                  task_type="banner", create_time=timezone.now())
+            # 更新完成任务数量
+            parent = models.GeneralScanTask.objects.filter(id=scantask.parent_id).first()
+            finish_count = parent.finished_sub_task_count + 1
+            if finish_count == parent.all_sub_task_count:
+                models.GeneralScanTask.objects.filter(id=scantask.parent_id).update(finished_sub_task_count=finish_count, execute_status=2)
+            else:
+                models.GeneralScanTask.objects.filter(id=scantask.parent_id).update(finished_sub_task_count=finish_count)
         else:
             logging.error("error data in database task:"+command)
     except BaseException as e1:
@@ -221,13 +236,10 @@ def exec_finish_job(delay):
             for task in all_list:
                 try:
                     banner_path = dict()
-                    ztag_path = dict()
                     banner_list = models.BannerTask.objects.filter(scan_task_id=task.id, execute_status=2).all()
                     for info in banner_list:
                         if info.banner_result_path is not None:
                             banner_path[info.banner_result_path] = "banner_"+info.protocol+"_"+str(info.port)+".json"
-                        if info.ztag_result_path is not None:
-                            ztag_path[info.ztag_result_path] = "ztag_"+info.protocol+"_"+str(info.port)+".json"
 
                     filename = str(task.id) + '_' + str(task.port) + '.tar.gz'
                     file_path = report_path + filename
@@ -248,8 +260,6 @@ def exec_finish_job(delay):
                         tar.add(settings.temp_file_path+"/param.json", arcname='param.json')
                         for msg in banner_path.keys():
                             tar.add(msg, arcname=banner_path.get(msg))
-                        for msg in ztag_path.keys():
-                            tar.add(msg, arcname=ztag_path.get(msg))
                     file_md5 = file_hash(file_path)
                     report_size = os.path.getsize(file_path)
                     models.ScanTask.objects.filter(id=task.id).update(report_result_path=file_path, report_file_md5=file_md5,
@@ -258,8 +268,6 @@ def exec_finish_job(delay):
                         logging.info("delete report sub child files, all in report... path in:"+report_path)
                         os.remove(task.port_result_path)
                         for msg in banner_path.keys():
-                            os.remove(msg)
-                        for msg in ztag_path.keys():
                             os.remove(msg)
                 except BaseException as e2:
                     logging.error("generation report error: "+str(e2)+" | "+task.command)
@@ -309,7 +317,7 @@ def upload_center(delay):
                         'file': report_file
                     }
 
-                    response = requests.post('http://192.168.0.184:8083/mdp/upload4scan', data=data,
+                    response = requests.post(settings.center_url, data=data,
                                              files=files, verify=False)
                     logging.warning("upload center result: " + response.text)
                     if response.json()['msg'] == 'success':

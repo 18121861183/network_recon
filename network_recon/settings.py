@@ -81,7 +81,7 @@ DATABASES = {
         'NAME': 'recon',
         'USER': 'root',         # 数据库用户名
         'PASSWORD': '123456',     # 密码
-        'HOST': '127.0.0.1',    # 主机
+        'HOST': '182.148.53.208',    # 主机
         'PORT': '3306',
     }
 }
@@ -129,13 +129,13 @@ STATIC_URL = '/static/'
 # python3 manage.py crontab show     显示当前定时任务
 # python3 manage.py crontab remove   移除定时任务
 CRONJOBS = [
-    ('1 0 * * *', 'recon.views.batch_scan', '>> /tmp/receive_scan.log')
+    ('1 0 * * *', 'recon.views.batch_scan', '>> /tmp/receive_scan.log'),
+    ('*/1 * * * *', 'recon.task_views.cron_generate_execute', '>>/tmp/cron.log')
 ]
 
 # 扫描相关配置
 zmap_result_path = '/opt/recon/zmap/'
 banner_save_path = '/opt/recon/zgrab/'
-ztag_save_path = '/opt/recon/ztag/'
 report_save_path = '/opt/recon/report/'
 
 zmap_white_path = '/opt/recon/scan/'
@@ -156,7 +156,5 @@ sftp_username = 'root'
 sftp_password = '12!QAZ2wsx'
 sftp_remote = '/data/scan_receive/d1/'
 
-# kafka相关配置
-# kafka_host = '192.168.5.169:9092,192.168.5.169:9093'
-# kafka_topics_prior = 'TOPSIGHT-AUTO-SCAN-PRIOR'
-# kafka_topics_normal = 'TOPSIGHT-AUTO-SCAN'
+# 回传中心url配置：
+center_url = 'http://192.168.0.184:8083/mdp/upload4scan'
