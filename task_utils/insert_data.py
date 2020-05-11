@@ -40,39 +40,39 @@ if wf.endswith("/") is False:
 
 model = config.get("file_model")
 
-# with open(config.get("scan_file"), "r") as all_ips:
-#     count = 1
-#     file_number = 1
-#     file_name = datetime.datetime.now().strftime("%Y%m%d%H%M%S_")
-#     _outfile = open(wf+file_name+str(file_number), 'w')
-#     max_number = int(config.get("record_max_ips"))
-#     print("开始分解要扫描的IP列表...")
-#     if model == 'single':
-#         for line in all_ips.readlines():
-#             if count != 0 and count > max_number:
-#                 _outfile.close()
-#                 file_number += 1
-#                 count = 0
-#                 _outfile = open(wf+file_name+str(file_number), 'w')
-#             line = line.strip()
-#             _outfile.write(line+"\n")
-#             number = ipaddress.ip_network(line, False).num_addresses
-#             count += number
-#     elif model == 'double':
-#         for line in all_ips.readlines():
-#             line = line.strip()
-#             array = line.split(",")
-#             if len(array) != 2:
-#                 continue
-#             for ip_num in range(int(ipaddress.IPv4Address(array[0])), int(ipaddress.IPv4Address(array[1]))+1):
-#                 if count != 0 and count >= max_number:
-#                     _outfile.close()
-#                     file_number += 1
-#                     count = 0
-#                     _outfile = open(wf + file_name + str(file_number), 'w')
-#                     print("生成指令文件：", file_name, file_number)
-#                 _outfile.write(str(ipaddress.ip_address(int(ip_num)))+"\n")
-#                 count += 1
+with open(config.get("scan_file"), "r") as all_ips:
+    count = 1
+    file_number = 1
+    file_name = datetime.datetime.now().strftime("%Y%m%d%H%M%S_")
+    _outfile = open(wf+file_name+str(file_number), 'w')
+    max_number = int(config.get("record_max_ips"))
+    print("开始分解要扫描的IP列表...")
+    if model == 'single':
+        for line in all_ips.readlines():
+            if count != 0 and count > max_number:
+                _outfile.close()
+                file_number += 1
+                count = 0
+                _outfile = open(wf+file_name+str(file_number), 'w')
+            line = line.strip()
+            _outfile.write(line+"\n")
+            number = ipaddress.ip_network(line, False).num_addresses
+            count += number
+    elif model == 'double':
+        for line in all_ips.readlines():
+            line = line.strip()
+            array = line.split(",")
+            if len(array) != 2:
+                continue
+            for ip_num in range(int(ipaddress.IPv4Address(array[0])), int(ipaddress.IPv4Address(array[1]))+1):
+                if count != 0 and count >= max_number:
+                    _outfile.close()
+                    file_number += 1
+                    count = 0
+                    _outfile = open(wf + file_name + str(file_number), 'w')
+                    print("生成指令文件：", file_name, file_number)
+                _outfile.write(str(ipaddress.ip_address(int(ip_num)))+"\n")
+                count += 1
 
 
 zmap_path = config.get("zmap_result_path")
@@ -110,7 +110,7 @@ if config.get("ports") == "default":
                     protocol_str += ","
                 protocol_str += protocol
             file1 = zmap_path + name + "_" + str(port) + ".csv"
-            command = ['zmap', '-w', wf+name, '--probe-module=icmp_echoscan', '-r',
+            command = ['zmap', '-w', wf+name, '-r',
                        config.get("network_send_rate"), '-p', str(port),
                        ' | ztee', file1]
             com_str = " ".join(command)
@@ -119,8 +119,8 @@ if config.get("ports") == "default":
 
             insert = "INSERT INTO recon_scantask VALUES" \
                      "('{}', '{}', {}, '{}', '{}', {}, 0, '{}', '{}', " \
-                     "NULL, NULL, NULL, 0, 0, 0, -1, {})" \
-                .format(_id, com_str, port, protocol_str, "*", ip_count, file1, dt, priority)
+                     "NULL, NULL, NULL, 0, 0, 0, 0, -1, {}, 0)" \
+                .format(_id, com_str, port, protocol_str, "192.168.0.0/16", ip_count, file1, dt, priority)
 
             print(insert)
 

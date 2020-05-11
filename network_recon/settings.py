@@ -27,6 +27,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+APPEND_SLASH = False
 
 # Application definition
 
@@ -80,9 +81,9 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'recon',
         'USER': 'root',         # 数据库用户名
-        'PASSWORD': '123456',     # 密码
-        'HOST': '182.148.53.208',    # 主机
-        'PORT': '3306',
+        'PASSWORD': 'tipDB@123',     # 密码
+        'HOST': '127.0.0.1',    # 主机
+        'PORT': '33066',
     }
 }
 
@@ -158,3 +159,7 @@ sftp_remote = '/data/scan_receive/d1/'
 
 # 回传中心url配置：
 center_url = 'http://192.168.0.184:8083/mdp/upload4scan'
+
+# 扫描任务概要信息存储路径
+scan_task_summary = '/opt/recon/summary/'
+

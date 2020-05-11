@@ -1,4 +1,5 @@
 import _thread
+import csv
 import hashlib
 import io
 import json
@@ -12,6 +13,8 @@ import logging
 # import paramiko as paramiko
 import requests
 import urllib3
+from collections import Counter
+from django.db.models import F
 from django.http import HttpResponse
 
 from django.shortcuts import render
@@ -23,6 +26,7 @@ from network_recon import settings
 from recon import models, date_util, hash_util, generation_task
 from recon.common import unfinished
 # from util import split_tar_report
+from recon.private_dict import BigDict
 
 urllib3.disable_warnings()
 logging.basicConfig(level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S',
@@ -65,6 +69,10 @@ if os.path.exists(settings.temp_file_path) is False:
 
 if os.path.exists(settings.scan_file_path) is False:
     os.makedirs(settings.scan_file_path)
+
+
+if os.path.exists(settings.scan_task_summary) is False:
+    os.makedirs(settings.scan_task_summary)
 
 
 def index(request):
@@ -236,10 +244,26 @@ def exec_finish_job(delay):
             for task in all_list:
                 try:
                     banner_path = dict()
+                    summary_sub_save = settings.scan_task_summary + task.parent_id + "/"
+                    if os.path.exists(summary_sub_save) is False:
+                        os.makedirs(summary_sub_save)
+
+                    csv_file = open(summary_sub_save+task.id+".csv", 'w', newline='')
+                    row_writer = csv.writer(csv_file, quotechar=',', quoting=csv.QUOTE_MINIMAL)
+
                     banner_list = models.BannerTask.objects.filter(scan_task_id=task.id, execute_status=2).all()
                     for info in banner_list:
                         if info.banner_result_path is not None:
                             banner_path[info.banner_result_path] = "banner_"+info.protocol+"_"+str(info.port)+".json"
+                            # 处理详细数据统计
+                            with open(info.banner_result_path, "r+") as ban:
+                                for line in ban:
+                                    if line.find('"status":"success"') > -1:
+                                        try:
+                                            obj = json.loads(line.strip())
+                                            row_writer.writerow([obj['ip'], info.protocol, info.port])
+                                        except BaseException as ee:
+                                            print(ee)
 
                     filename = str(task.id) + '_' + str(task.port) + '.tar.gz'
                     file_path = report_path + filename
@@ -264,6 +288,7 @@ def exec_finish_job(delay):
                     report_size = os.path.getsize(file_path)
                     models.ScanTask.objects.filter(id=task.id).update(report_result_path=file_path, report_file_md5=file_md5,
                                                                       report_size=report_size, upload_status=0)
+
                     if len(banner_path.keys()) > 0:
                         logging.info("delete report sub child files, all in report... path in:"+report_path)
                         os.remove(task.port_result_path)
@@ -278,6 +303,87 @@ def get_mac():
     address = hex(uuid.getnode())[2:]
     address = address.upper()
     return '-'.join(address[i:i + 2] for i in range(0, len(address), 2))
+
+
+def dict_to_jsons(detail_list):
+    new_list = list()
+    for key in detail_list.keys():
+        info = dict()
+        info["ip"] = key
+        info["value"] = detail_list.get(key)
+        new_list.append(info)
+    return new_list
+
+
+def gene_summary_file(total, online, ip_tops, protocol_tops, port_tops, detail_list, save_to_file):
+    summary = dict()
+    summary["total"] = total
+    summary["online"] = online
+    ip_top = dict()
+    for ip in ip_tops:
+        ip_top[ip[0]] = ip[1]
+    summary["ip_top"] = ip_top
+    protocol_top = dict()
+    for protocol in protocol_tops:
+        protocol_top[protocol[0]] = protocol_top[1]
+    summary["protocol_top"] = protocol_top
+    port_top = dict()
+    for port in port_tops:
+        port_top[port[0]] = port[1]
+    summary["port_top"] = port_top
+    summary["detail"] = dict_to_jsons(detail_list)
+    file = open(save_to_file, "w")
+    file.write(json.dumps(summary))
+    file.close()
+
+
+def start_deal(path, task):
+    total = task.ip_count
+    dirs = os.listdir(path)
+    ip_list = list()
+    protocol_list = list()
+    port_list = list()
+    detail_list = BigDict()
+    for file_name in dirs:
+        if file_name.endswith(".csv"):
+            with open(path+"/"+file_name, newline='') as csv_file:
+                reader = csv.reader(csv_file, quotechar=',')
+                for row in reader:
+                    detail_list.put(row[0], row[2]+"/"+row[1])
+                    ip_list.__add__(row[0])
+                    protocol_list.__add__(row[1])
+                    port_list.__add__(row[2])
+    # ip端口开放top10
+    ip_counts = Counter(ip_list)
+    ip_tops = ip_counts.most_common(10)
+
+    # 协议top10
+    protocol_counts = Counter(protocol_list)
+    protocol_tops = protocol_counts.most_common(10)
+
+    # 端口top10
+    port_counts = Counter(port_list)
+    port_tops = port_counts.most_common(10)
+
+    # 统计在线ip
+    online = len(set(ip_list))
+
+    result_summary_path = settings.scan_task_summary + task.id + ".json"
+    gene_summary_file(total, online, ip_tops, protocol_tops, port_tops, detail_list, result_summary_path)
+    models.GeneralScanTask.objects.filter(id=task.id).update(summary_result_path=result_summary_path)
+    logging.info("任务执行情况概要报告执行完成..." + task.id)
+
+
+def exec_task_summary(delay):
+    while True:
+        logging.info("start task summary generation...")
+        finished_list = models.GeneralScanTask.objects.raw("select * from recon_generalscantask where all_sub_task_count=finished_sub_task_count and summary_result_path is null")
+        if len(finished_list) > 0:
+            for finish in finished_list:
+                current_path = settings.scan_task_summary+finish.id
+                logging.info("开始处理任务概要情况生成：..." + finish.id)
+                start_deal(current_path, finish)
+        time.sleep(delay)
 
 
 # def sftp_upload(local):
@@ -339,12 +445,11 @@ def real_time_scan():
         time.sleep(1)
 
 
-# _thread.start_new_thread(upload_center, (2,))
-#
-# _thread.start_new_thread(zmap_start, (2,))
-# _thread.start_new_thread(exec_banner_job, (2,))
-# _thread.start_new_thread(exec_finish_job, (2,))
-
+_thread.start_new_thread(zmap_start, (2,))
+_thread.start_new_thread(exec_banner_job, (2,))
+_thread.start_new_thread(exec_finish_job, (2,))
+_thread.start_new_thread(upload_center, (2,))
+_thread.start_new_thread(exec_task_summary, (2,))
 
 # 实时探测任务
 # _thread.start_new_thread(real_time_scan, ())

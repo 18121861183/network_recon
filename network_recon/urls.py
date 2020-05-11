@@ -28,5 +28,6 @@ urlpatterns = [
     path('insert_task/', task_views.generate_task),
     path('query_task/', task_views.scan_task_query),
     path('task_detail/', task_views.task_detail),
+    path('task_summary/', task_views.task_summary),
     path('task_operation/', task_views.task_operation),
 ]

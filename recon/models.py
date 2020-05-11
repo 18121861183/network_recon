@@ -50,6 +50,7 @@ class GeneralScanTask(models.Model):
     execute_status = models.IntegerField(verbose_name="执行状态(0-未执行,1-正在执行,2-执行完成,-1-执行失败,3-暂停执行,4-任务取消,5-标记删除)", default=0)
     all_sub_task_count = models.IntegerField(verbose_name="所有子任务数量", default=0)
     finished_sub_task_count = models.IntegerField(verbose_name="已完成子任务数量", default=0)
+    summary_result_path = models.CharField(verbose_name="概要报告存储路径", null=True, max_length=200)
 
     def __str__(self):
         return self.id

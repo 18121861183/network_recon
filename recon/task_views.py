@@ -341,5 +341,25 @@ def task_operation(request):
 #     task.save()
 
 
+def task_summary(request):
+    if request.method == 'POST':
+        task_id = request.POST.get("_id")
+        try:
+            task = models.GeneralScanTask.objects.get(id=task_id)
+        except BaseException as be:
+            return JsonResponse('{"msg": "错误的任务号...'+str(be)+'"}', charset="utf-8", safe=False)
+        if task.summary_result_path is None:
+            return JsonResponse('{"msg": "暂未生成概要报告，请稍后再查看"}', charset="utf-8", safe=False)
+        else:
+            if os.path.exists(task.summary_result_path):
+                lines = ""
+                with open(task.summary_result_path, "r+") as file:
+                    for line in file:
+                        lines += line
+                return JsonResponse(lines, charset="utf-8", safe=False)
+            else:
+                return JsonResponse('{"msg": "概要报告已经被清理..."}', charset="utf-8", safe=False)
+
+
 def get_protocols(request):
     return JsonResponse({"port_protocol": common.port_protocols, "protocol_port": common.protocol_ports})
